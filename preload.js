@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 // Expose safe IPC bridge to the renderer (AVA web UI)
 contextBridge.exposeInMainWorld('avaElectron', {
+  apiKey: process.env.ANTHROPIC_API_KEY || '',
   // Tell main process about state changes
   setState: (state) => ipcRenderer.send('ava-state', state),
   wakeDetected: () => ipcRenderer.send('wake-detected'),

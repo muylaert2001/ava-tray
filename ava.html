@@ -156,7 +156,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
 <script>
 var B='https://nova-backend-production-de74.up.railway.app';
 var L='http://127.0.0.1:7878';
-var K=''; // TODO: set your Anthropic API key here (never commit secrets)
+var K=(window.avaElectron&&window.avaElectron.apiKey)||'';
 var AGENTS={ava:{name:"AVA",sys:"You are AVA. Warm, precise, web search enabled, computer control via tray app. Concise, calm authority."},research:{name:"Research Agent",sys:"Deep research specialist. Web search. Thorough, cite sources."},tasks:{name:"Task Agent",sys:"Task and productivity specialist. Break goals into steps."},code:{name:"Code Agent",sys:"Expert software engineer. Clean code, any language."},system:{name:"System Agent",sys:"Windows PC control via local tray app. Open apps, files, volume, screenshots."}};
 var agent='ava',loading=false,listening=false,wakeOn=false,wakeRec=null,activeRec=null,liveT='',isPlaying=false;
 var tasks=[],mems=[];

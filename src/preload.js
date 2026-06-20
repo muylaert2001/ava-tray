@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('avaElectron', {
+  apiKey: process.env.ANTHROPIC_API_KEY || '',
   // State
   setState: (state) => ipcRenderer.send('ava-state', state),
   wakeDetected: () => ipcRenderer.send('wake-detected'),
