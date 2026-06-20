@@ -1,0 +1,40 @@
+{
+  "name": "ava-tray",
+  "version": "1.0.0",
+  "description": "AVA — always-on desktop tray app with wake word",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build-win": "electron-builder --win",
+    "build-mac": "electron-builder --mac",
+    "build-linux": "electron-builder --linux"
+  },
+  "dependencies": {
+    "@types/node": "^25.9.3",
+    "axios": "^1.6.0",
+    "express": "^5.2.1",
+    "node-powershell": "^5.0.1",
+    "node-record-lpcm16": "^1.0.1",
+    "open": "^11.0.0"
+  },
+  "devDependencies": {
+    "electron": "^42.4.0",
+    "electron-builder": "^24.6.4"
+  },
+  "build": {
+    "appId": "com.ava.assistant",
+    "productName": "AVA",
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png"
+    }
+  }
+}
