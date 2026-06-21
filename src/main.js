@@ -51,9 +51,9 @@ if($result){ Write-Output ("WAKE:" + $result.Text) }
 // ── Main AVA window ──
 function createMainWindow() {
   mainWindow = new BrowserWindow({
-    width: 900,
-    height: 700,
-    show: false,
+    width: 1280,
+    height: 860,
+    show: true,
     frame: false,
     resizable: true,
     skipTaskbar: false,
@@ -66,8 +66,8 @@ function createMainWindow() {
     }
   });
   mainWindow.loadFile(path.join(__dirname, '../ava.html'));
-mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow.show();
+mainWindow.once('ready-to-show', () => {
+    mainWindow.center();
     mainWindow.focus();
   });
 }
