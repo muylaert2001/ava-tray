@@ -1,8 +1,8 @@
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
 const path = require('path');
 const os = require('os');
 
-// ── Execute a PowerShell command ──
+// ── Execute a PowerShell command (captures output, process must exit) ──
 function ps(command) {
   return new Promise((resolve, reject) => {
     exec(`powershell -Command "${command}"`, (error, stdout, stderr) => {
@@ -12,13 +12,29 @@ function ps(command) {
   });
 }
 
-// ── Execute a regular shell command ──
+// ── Execute a shell command that produces output and exits promptly ──
 function shell(command) {
   return new Promise((resolve, reject) => {
     exec(command, (error, stdout, stderr) => {
       if (error) reject(error);
       else resolve(stdout.trim());
     });
+  });
+}
+
+// ── Fire-and-forget launcher for GUI apps/URLs.
+// Uses detached + stdio:ignore so Node never holds the child's pipes open,
+// which would cause exec() to hang until the GUI window is closed.
+function launch(command) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('cmd.exe', ['/c', command], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: false,
+    });
+    child.unref();
+    child.once('error', reject);
+    child.once('spawn', resolve);
   });
 }
 
@@ -54,7 +70,7 @@ const computer = {
     };
     const lower = appName.toLowerCase();
     const cmd = apps[lower] || `start ${lower}`;
-    await shell(cmd);
+    await launch(cmd);
     return `Opening ${appName}`;
   },
 
@@ -65,12 +81,12 @@ const computer = {
 
   // ── Files & Folders ──
   async openFile(filePath) {
-    await shell(`start "" "${filePath}"`);
+    await launch(`start "" "${filePath}"`);
     return `Opening ${filePath}`;
   },
 
   async openFolder(folderPath) {
-    await shell(`start explorer "${folderPath}"`);
+    await launch(`start explorer "${folderPath}"`);
     return `Opening folder ${folderPath}`;
   },
 
@@ -80,17 +96,17 @@ const computer = {
   },
 
   async openDownloads() {
-    await shell(`start explorer "${os.homedir()}\\Downloads"`);
+    await launch(`start explorer "${os.homedir()}\\Downloads"`);
     return 'Opening Downloads folder';
   },
 
   async openDocuments() {
-    await shell(`start explorer "${os.homedir()}\\Documents"`);
+    await launch(`start explorer "${os.homedir()}\\Documents"`);
     return 'Opening Documents folder';
   },
 
   async openDesktop() {
-    await shell(`start explorer "${os.homedir()}\\Desktop"`);
+    await launch(`start explorer "${os.homedir()}\\Desktop"`);
     return 'Opening Desktop';
   },
 
@@ -197,45 +213,45 @@ async getSystemInfo() {
   // ── Browser ──
   async openUrl(url) {
     if (!url.startsWith('http')) url = 'https://' + url;
-    await shell(`start ${url}`);
+    await launch(`start ${url}`);
     return `Opening ${url}`;
   },
 
   async googleSearch(query) {
     const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-    await shell(`start ${url}`);
+    await launch(`start ${url}`);
     return `Searching Google for "${query}"`;
   },
 
   async openYoutube(query) {
     const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-    await shell(`start ${url}`);
+    await launch(`start ${url}`);
     return `Opening YouTube search for "${query}"`;
   },
 
   // ── Windows Settings ──
   async openWifi() {
-    await shell('start ms-settings:network-wifi');
+    await launch('start ms-settings:network-wifi');
     return 'Opening WiFi settings';
   },
 
   async openBluetooth() {
-    await shell('start ms-settings:bluetooth');
+    await launch('start ms-settings:bluetooth');
     return 'Opening Bluetooth settings';
   },
 
   async openDisplay() {
-    await shell('start ms-settings:display');
+    await launch('start ms-settings:display');
     return 'Opening Display settings';
   },
 
   async openSound() {
-    await shell('start ms-settings:sound');
+    await launch('start ms-settings:sound');
     return 'Opening Sound settings';
   },
 
   async checkUpdates() {
-    await shell('start ms-settings:windowsupdate');
+    await launch('start ms-settings:windowsupdate');
     return 'Opening Windows Update';
   },
 

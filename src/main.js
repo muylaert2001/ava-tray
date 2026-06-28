@@ -1,4 +1,9 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+const log = require('electron-log/main');
+log.initialize();
+// Patch console so every console.log/warn/error across all main-process modules
+// (including poller.js) writes to %APPDATA%\AVA\logs\main.log
+Object.assign(console, log.functions);
 const fs = require("fs");
 const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, shell, session } = require('electron');
 const computer = require('./computer');

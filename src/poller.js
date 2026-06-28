@@ -43,15 +43,20 @@ class TrayPoller {
 
   // Long-poll: backend blocks until a command is ready or SERVER_HOLD_MS elapses
   async pollOnce() {
+    const t = Date.now();
+    console.log(`[poller] POLL START ${t}`);
     const res = await this.http.get('/api/tray/poll', {
       params: { timeout: SERVER_HOLD_MS },
     });
+    console.log(`[poller] POLL RETURN ${Date.now()} (+${Date.now()-t}ms) commandId=${res.data?.commandId ?? 'null'}`);
     return res.data; // { commandId, action, param } | { commandId: null }
   }
 
   async sendResult(commandId, result, error = null) {
     try {
+      console.log(`[poller] SEND RESULT ${Date.now()} commandId=${commandId} error=${error ?? 'none'}`);
       await this.http.post('/api/tray/result', { commandId, result, error });
+      console.log(`[poller] RESULT ACKED ${Date.now()} commandId=${commandId}`);
     } catch (e) {
       console.warn('[poller] Failed to send result:', e.message);
     }
@@ -63,13 +68,15 @@ class TrayPoller {
       await this.sendResult(commandId, null, `Unknown action: ${action}`);
       return;
     }
-    console.log(`[poller] Executing: ${action}(${param ?? ''})`);
+    console.log(`[poller] EXEC START ${Date.now()} commandId=${commandId} action=${action}(${param ?? ''})`);
     try {
       const result = param !== undefined
         ? await computer[action](param)
         : await computer[action]();
+      console.log(`[poller] EXEC DONE  ${Date.now()} commandId=${commandId}`);
       await this.sendResult(commandId, result);
     } catch (e) {
+      console.log(`[poller] EXEC ERROR ${Date.now()} commandId=${commandId} err=${e.message}`);
       await this.sendResult(commandId, null, e.message);
     }
   }
