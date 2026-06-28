@@ -49,11 +49,11 @@ if($result){ Write-Output ("WAKE:" + $result.Text) }
 `;
 
 // ── Main AVA window ──
-function createMainWindow() {
+function createMainWindow(startHidden = false) {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 860,
-    show: true,
+    show: false,
     frame: false,
     resizable: true,
     skipTaskbar: false,
@@ -66,9 +66,16 @@ function createMainWindow() {
     }
   });
   mainWindow.loadFile(path.join(__dirname, '../ava.html'));
-mainWindow.once('ready-to-show', () => {
-    mainWindow.center();
-    mainWindow.focus();
+  mainWindow.once('ready-to-show', () => {
+    if (!startHidden) {
+      mainWindow.center();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+  mainWindow.on('close', (e) => {
+    e.preventDefault();
+    mainWindow.hide();
   });
 }
 
@@ -254,7 +261,10 @@ app.whenReady().then(() => {
   });
   session.defaultSession.setPermissionCheckHandler(() => true);
 
-  createMainWindow();
+  app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
+  const startHidden = app.getLoginItemSettings().wasOpenedAtLogin;
+
+  createMainWindow(startHidden);
   createOverlayWindow();
   createTray();
 // Auto-enable wake word on startup
@@ -272,12 +282,6 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', (e) => e.preventDefault());
-if (mainWindow) {
-  mainWindow.on('close', (e) => {
-    e.preventDefault();
-    mainWindow.hide();
-  });
-}
 app.on('before-quit', () => {
   poller.stop();
   stopTrayWake();
