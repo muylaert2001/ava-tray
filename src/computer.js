@@ -138,9 +138,10 @@ const computer = {
 
   // ── System ──
 async screenshot() {
-  const file = `${os.homedir()}\\Desktop\\AVA_screenshot_${Date.now()}.png`;
-  await ps(`Add-Type -AssemblyName System.Windows.Forms,System.Drawing; $b = New-Object System.Drawing.Bitmap([System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width,[System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height); $g = [System.Drawing.Graphics]::FromImage($b); $g.CopyFromScreen(0,0,0,0,$b.Size); $b.Save('${file.replace(/\\/g, '\\\\')}'); $g.Dispose(); $b.Dispose()`);
-  return 'Screenshot saved to your Desktop!';
+  // Use the Windows shell folder API so OneDrive-redirected Desktops work correctly.
+  // Join-Path + single-quoted filename avoids double-quote conflicts with ps() wrapper.
+  const result = await ps(`Add-Type -AssemblyName System.Windows.Forms,System.Drawing; $desktop = [Environment]::GetFolderPath('Desktop'); $file = Join-Path $desktop 'AVA_screenshot_${Date.now()}.png'; $b = New-Object System.Drawing.Bitmap([System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width,[System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height); $g = [System.Drawing.Graphics]::FromImage($b); $g.CopyFromScreen(0,0,0,0,$b.Size); $b.Save($file); $g.Dispose(); $b.Dispose(); Write-Output $file`);
+  return `Screenshot saved to your Desktop! (${result})`;
 },
 
   async takeScreenshot() { return this.screenshot(); },
