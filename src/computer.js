@@ -143,6 +143,8 @@ async screenshot() {
   return 'Screenshot saved to your Desktop!';
 },
 
+  async takeScreenshot() { return this.screenshot(); },
+
   async lockScreen() {
     await ps(`rundll32.exe user32.dll,LockWorkStation`);
     return 'Screen locked';
