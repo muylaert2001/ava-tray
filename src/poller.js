@@ -93,7 +93,9 @@ class TrayPoller {
       try {
         const cmd = await this.pollOnce();
         if (cmd?.commandId) {
-          await this.execute(cmd);
+          // Don't await — execute in background so the next poll starts immediately,
+          // closing the window where a queued command would wait out the browser timeout.
+          this.execute(cmd);
         }
         // If commandId is null the server hold elapsed with no command — loop immediately
       } catch (e) {
