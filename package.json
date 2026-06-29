@@ -11,8 +11,9 @@
   },
   "dependencies": {
     "@types/node": "^25.9.3",
-    "dotenv": "^16.0.0",
     "axios": "^1.6.0",
+    "dotenv": "^16.0.0",
+    "electron-log": "^5.4.4",
     "express": "^5.2.1",
     "node-powershell": "^5.0.1",
     "node-record-lpcm16": "^1.0.1",

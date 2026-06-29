@@ -1,8 +1,13 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+const log = require('electron-log/main');
+log.initialize();
+// Patch console so every console.log/warn/error across all main-process modules
+// (including poller.js) writes to %APPDATA%\AVA\logs\main.log
+Object.assign(console, log.functions);
 const fs = require("fs");
 const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, shell, session } = require('electron');
-const express = require('express');
 const computer = require('./computer');
+const poller = require('./poller');
 const path = require('path');
 const { exec, spawn } = require('child_process');
 
@@ -49,11 +54,11 @@ if($result){ Write-Output ("WAKE:" + $result.Text) }
 `;
 
 // ── Main AVA window ──
-function createMainWindow() {
+function createMainWindow(startHidden = false) {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 860,
-    show: true,
+    show: false,
     frame: false,
     resizable: true,
     skipTaskbar: false,
@@ -66,9 +71,16 @@ function createMainWindow() {
     }
   });
   mainWindow.loadFile(path.join(__dirname, '../ava.html'));
-mainWindow.once('ready-to-show', () => {
-    mainWindow.center();
-    mainWindow.focus();
+  mainWindow.once('ready-to-show', () => {
+    if (!startHidden) {
+      mainWindow.center();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+  mainWindow.on('close', (e) => {
+    e.preventDefault();
+    mainWindow.hide();
   });
 }
 
@@ -254,7 +266,10 @@ app.whenReady().then(() => {
   });
   session.defaultSession.setPermissionCheckHandler(() => true);
 
-  createMainWindow();
+  app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
+  const startHidden = app.getLoginItemSettings().wasOpenedAtLogin;
+
+  createMainWindow(startHidden);
   createOverlayWindow();
   createTray();
 // Auto-enable wake word on startup
@@ -265,60 +280,15 @@ app.whenReady().then(() => {
     console.log('Wake word auto-enabled');
   }, 3000);
 
-  // Local API
-  const localApp = express();
-  localApp.use(express.json());
-  localApp.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    if (req.method === 'OPTIONS') return res.sendStatus(200);
-    next();
-  });
-  localApp.post('/computer', async (req, res) => {
-    const { action, param } = req.body;
-    try {
-      const result = param !== undefined ? await computer[action](param) : await computer[action]();
-      res.json({ success: true, result });
-    } catch(e) { res.json({ success: false, error: e.message }); }
-  });
-  localApp.get('/ping', (req, res) => res.json({ status: 'AVA tray online' }));
-  localApp.post('/voice-input', async (req, res) => {
-    const { text } = req.body;
-    console.log('Voice input received:', text);
-    // Send text to AVA UI and get AI response
-    global.pendingVoiceInput = text;
-    global.pendingVoiceResponse = null;
-    console.log('Sending voice-input to renderer:', text); if (mainWindow) mainWindow.webContents.send('voice-input', text); console.log('Sent! mainWindow visible:', mainWindow && mainWindow.isVisible());
-    // Wait for response (max 25 seconds)
-    let waited = 0;
-    while (!global.pendingVoiceResponse && waited < 25000) {
-      await new Promise(r => setTimeout(r, 100));
-      waited += 100;
-    }
-    res.json({ response: global.pendingVoiceResponse || 'No response received.' });
-  });
-  localApp.post('/voice-transcript', (req, res) => {
-    const { text } = req.body;
-    if (mainWindow) mainWindow.webContents.send('voice-transcript', text);
-    res.json({ ok: true });
-  });
-localApp.get('/wake-status', (req, res) => { res.json({ wake: global.wakeDetected || false }); global.wakeDetected = false; });
-  localApp.get('/', (req, res) => res.sendFile(path.join(__dirname, '../ava.html')));
-  localApp.listen(7878, () => console.log('AVA local API on port 7878'));
-  localApp.listen(8080, () => console.log('AVA interface on http://localhost:8080'));
+  // Start polling the backend for remote commands
+  poller.start();
 
   app.setActivationPolicy?.('accessory');
 });
 
 app.on('window-all-closed', (e) => e.preventDefault());
-if (mainWindow) {
-  mainWindow.on('close', (e) => {
-    e.preventDefault();
-    mainWindow.hide();
-  });
-}
 app.on('before-quit', () => {
+  poller.stop();
   stopTrayWake();
   stopPSListen();
   mainWindow?.destroy();
