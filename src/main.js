@@ -71,6 +71,9 @@ function createMainWindow(startHidden = false) {
     }
   });
   mainWindow.loadFile(path.join(__dirname, '../ava.html'));
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F12') mainWindow.webContents.toggleDevTools();
+  });
   mainWindow.once('ready-to-show', () => {
     if (!startHidden) {
       mainWindow.center();
@@ -112,6 +115,7 @@ function createTray() {
       { type: 'separator' },
       { label: trayWakeOn ? '🟣 Wake Word: ON' : '⚫ Wake Word: OFF', click: toggleTrayWake },
       { label: 'Open AVA', click: showWindow },
+      { label: 'DevTools', click: () => mainWindow?.webContents.toggleDevTools() },
       { type: 'separator' },
       { label: 'Quit AVA', click: () => app.quit() }
     ]);
