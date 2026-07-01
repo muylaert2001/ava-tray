@@ -277,8 +277,6 @@ resizeCanvas();drawOrb();load();checkSvcs();setSt('idle');
 setInterval(fetchNP,30000);setInterval(checkSvcs,60000);
 setInterval(async function(){ try{ var r=await fetch(B+"/api/reminders"); var d=await r.json(); var now=Date.now(); (d.reminders||[]).forEach(function(rem){ if(!rem.notified && new Date(rem.dueAt).getTime()<=now){ rem.notified=true; var msg="Reminder: "+rem.message; speakText(msg); hists[agent].push({role:"assistant",content:msg}); renderMsgs(); save(); fetch(B+"/api/reminders/"+rem.id+"/notified",{method:"POST"}).catch(function(){}); } }); }catch(e){} }, 15000);
 
-async function fetchCalendarEvents(){try{var r=await fetch(B+'/auth/google/calendar',{credentials:'include'});var d=await r.json();return d.events||[];}catch(e){return null;}}
-async function createCalendarEvent(title,start,end,desc,loc){try{var r=await fetch(B+'/auth/google/calendar/create',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:title,start:start,end:end,description:desc,location:loc})});return await r.json();}catch(e){return {success:false};}}
 </script>
 </body>
 </html>
