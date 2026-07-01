@@ -28,6 +28,10 @@ function createMainWindow() {
   // Load the AVA interface (claude.ai artifact or local file)
   mainWindow.loadFile(path.join(__dirname, 'ava.html'));
 
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F12') mainWindow.webContents.toggleDevTools();
+  });
+
   mainWindow.on('blur', () => {
     // Optionally hide when clicking away
     // mainWindow.hide();
@@ -75,6 +79,7 @@ function createTray() {
         click: toggleWakeWord
       },
       { label: 'Open AVA', click: toggleWindow },
+      { label: 'DevTools', click: () => mainWindow?.webContents.toggleDevTools() },
       { type: 'separator' },
       { label: 'Open in Browser', click: () => shell.openExternal('https://claude.ai') },
       { type: 'separator' },
