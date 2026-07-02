@@ -1,6 +1,12 @@
 const { exec, spawn } = require('child_process');
 const path = require('path');
 const os = require('os');
+const fsp = require('fs/promises');
+
+// ── Escape a value for interpolation into a PowerShell double-quoted string ──
+function psQuote(str) {
+  return String(str).replace(/"/g, '`"');
+}
 
 // ── Execute a PowerShell command (captures output, process must exit) ──
 function ps(command) {
@@ -75,14 +81,49 @@ const computer = {
   },
 
   async closeApp(appName) {
-    await ps(`Stop-Process -Name "${appName}" -Force -ErrorAction SilentlyContinue`);
+    const q = psQuote(appName);
+    // Ask windows to close nicely first, then force-kill anything left after a grace period.
+    await ps(`$p = Get-Process -Name "${q}" -ErrorAction SilentlyContinue; if ($p) { $p | ForEach-Object { $_.CloseMainWindow() | Out-Null }; Start-Sleep -Milliseconds 1500; Get-Process -Name "${q}" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue }`);
     return `Closing ${appName}`;
+  },
+
+  async killProcess(processName) {
+    const q = psQuote(processName);
+    await ps(`Stop-Process -Name "${q}" -Force -ErrorAction SilentlyContinue`);
+    return `Killed process ${processName}`;
+  },
+
+  async listProcesses() {
+    const result = await ps(`Get-Process | Sort-Object -Property CPU -Descending | Select-Object -First 25 Name, Id, CPU | ConvertTo-Json`);
+    return result || 'No processes found';
   },
 
   // ── Files & Folders ──
   async openFile(filePath) {
     await launch(`start "" "${filePath}"`);
     return `Opening ${filePath}`;
+  },
+
+  async readFile(filePath) {
+    const content = await fsp.readFile(filePath, 'utf8');
+    return content.length > 4000 ? content.slice(0, 4000) + '\n... (truncated)' : content;
+  },
+
+  async writeFile(payload) {
+    const { filePath, content } = typeof payload === 'string' ? JSON.parse(payload) : payload;
+    await fsp.writeFile(filePath, content, 'utf8');
+    return `Wrote to ${filePath}`;
+  },
+
+  async listFiles(folderPath) {
+    const entries = await fsp.readdir(folderPath, { withFileTypes: true });
+    if (!entries.length) return 'Folder is empty';
+    return entries.map(e => (e.isDirectory() ? '[DIR] ' : '') + e.name).join('\n');
+  },
+
+  async deleteFile(filePath) {
+    await fsp.unlink(filePath);
+    return `Deleted ${filePath}`;
   },
 
   async openFolder(folderPath) {
