@@ -1,6 +1,5 @@
 const { exec, spawn } = require('child_process');
 const path = require('path');
-const os = require('os');
 const fsp = require('fs/promises');
 
 // ── Escape a value for interpolation into a PowerShell double-quoted string ──
@@ -137,17 +136,19 @@ const computer = {
   },
 
   async openDownloads() {
-    await launch(`start explorer "${os.homedir()}\\Downloads"`);
+    // Downloads has no .NET SpecialFolder entry — resolve via the shell namespace so
+    // OneDrive-redirected Downloads folders open correctly.
+    await ps(`$p = (New-Object -ComObject Shell.Application).Namespace('shell:Downloads').Self.Path; Start-Process explorer.exe -ArgumentList $p`);
     return 'Opening Downloads folder';
   },
 
   async openDocuments() {
-    await launch(`start explorer "${os.homedir()}\\Documents"`);
+    await ps(`$p = [Environment]::GetFolderPath('MyDocuments'); Start-Process explorer.exe -ArgumentList $p`);
     return 'Opening Documents folder';
   },
 
   async openDesktop() {
-    await launch(`start explorer "${os.homedir()}\\Desktop"`);
+    await ps(`$p = [Environment]::GetFolderPath('Desktop'); Start-Process explorer.exe -ArgumentList $p`);
     return 'Opening Desktop';
   },
 
