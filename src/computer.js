@@ -152,6 +152,11 @@ const computer = {
     return 'Opening Desktop';
   },
 
+  async openPictures() {
+    await ps(`$p = [Environment]::GetFolderPath('MyPictures'); Start-Process explorer.exe -ArgumentList $p`);
+    return 'Opening Pictures folder';
+  },
+
   async emptyRecycleBin() {
     await ps(`Clear-RecycleBin -Force -ErrorAction SilentlyContinue`);
     return 'Recycle bin emptied';
