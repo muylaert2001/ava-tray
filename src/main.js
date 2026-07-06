@@ -18,6 +18,38 @@ let trayWakeOn = false;
 let trayWakeProc = null;
 let listenProc = null;
 let isListening = false;
+let visionProc = null;
+
+// ── ava-vision.py process ──
+function startVisionProcess() {
+  const scriptPath = 'C:/NOVA/ava-vision.py';
+  if (!fs.existsSync(scriptPath)) {
+    console.warn('ava-vision.py not found at', scriptPath, '- skipping vision process');
+    return;
+  }
+  const proc = spawn('python', [scriptPath], { detached: false });
+  visionProc = proc;
+
+  proc.stdout?.on('data', (data) => console.log('[vision]', data.toString().trim()));
+  proc.stderr?.on('data', (data) => console.error('[vision]', data.toString().trim()));
+
+  proc.on('error', (err) => {
+    console.error('Failed to start ava-vision.py (is python installed and on PATH?):', err.message);
+    visionProc = null;
+  });
+
+  proc.on('exit', (code) => {
+    console.log('ava-vision.py exited with code', code);
+    if (visionProc === proc) visionProc = null;
+  });
+}
+
+function stopVisionProcess() {
+  if (visionProc) {
+    try { visionProc.kill(); } catch (e) {}
+    visionProc = null;
+  }
+}
 
 // ── PowerShell speech recognition script ──
 const PS_LISTEN = `
@@ -287,6 +319,8 @@ app.whenReady().then(() => {
   // Start polling the backend for remote commands
   poller.start();
 
+  startVisionProcess();
+
   app.setActivationPolicy?.('accessory');
 });
 
@@ -295,6 +329,7 @@ app.on('before-quit', () => {
   poller.stop();
   stopTrayWake();
   stopPSListen();
+  stopVisionProcess();
   mainWindow?.destroy();
   overlayWindow?.destroy();
 });
