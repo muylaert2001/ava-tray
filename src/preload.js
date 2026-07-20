@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('avaElectron', {
 
   // Computer control
   onVoiceInput: (cb) => ipcRenderer.on('voice-input', (e, text) => cb(text)),
+  onProactiveGreeting: (cb) => ipcRenderer.on('proactive-greeting', (e, text) => cb(text)),
   onVoiceTranscript: (cb) => ipcRenderer.on('voice-transcript', (e, text) => cb(text)),
   sendVoiceResponse: (text) => ipcRenderer.send('voice-response', text),
   computer: async (action, param) => {

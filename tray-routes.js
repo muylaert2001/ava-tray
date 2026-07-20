@@ -193,6 +193,28 @@ app.get('/api/tray/result/:commandId', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /api/proactive
+// Tray polls this every 60s. Returns a queued proactive greeting for this
+// device, if any, and consumes it so it's only spoken once.
+//
+// Push a greeting onto the queue from wherever you decide to generate one
+// (a cron job, another script, etc.):
+//   await r.lPush(`proactive:queue:${deviceId}`, 'Good morning, Thomas.');
+// ─────────────────────────────────────────────────────────────────────────────
+app.get('/api/proactive', trayAuth, async (req, res) => {
+  try {
+    const deviceId = req.headers['x-device-id'];
+    if (!deviceId) return res.status(400).json({ error: 'X-Device-Id header required' });
+
+    const greeting = await r.rPop(`proactive:queue:${deviceId}`);
+    res.json({ greeting: greeting || null });
+  } catch (e) {
+    console.error('[tray] Proactive error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /api/tray/devices
 // Returns all registered devices and whether each is currently online.
 // Useful for a device-picker in the AVA UI when multiple devices are registered.

@@ -8,6 +8,9 @@ const fs = require("fs");
 const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, shell, session } = require('electron');
 const computer = require('./computer');
 const poller = require('./poller');
+poller.onGreeting = (text) => {
+  if (mainWindow) mainWindow.webContents.send('proactive-greeting', text);
+};
 const path = require('path');
 const { exec, spawn } = require('child_process');
 

@@ -15,6 +15,8 @@ class TrayPoller {
     this.token    = process.env.TRAY_TOKEN;
     this.deviceId = process.env.DEVICE_ID || os.hostname();
     this.running  = false;
+    this.onGreeting = null; // set by main.js to relay a greeting to the renderer
+    this.proactiveInterval = null;
 
     this.http = axios.create({
       baseURL: BACKEND,
@@ -50,6 +52,18 @@ class TrayPoller {
     });
     console.log(`[poller] POLL RETURN ${Date.now()} (+${Date.now()-t}ms) commandId=${res.data?.commandId ?? 'null'}`);
     return res.data; // { commandId, action, param } | { commandId: null }
+  }
+
+  async pollProactive() {
+    try {
+      const res = await this.http.get('/api/proactive');
+      const greeting = res.data?.greeting;
+      if (greeting && this.onGreeting) {
+        this.onGreeting(greeting);
+      }
+    } catch (e) {
+      console.warn('[poller] Proactive poll failed:', e.message);
+    }
   }
 
   async sendResult(commandId, result, error = null) {
@@ -89,10 +103,15 @@ class TrayPoller {
     this.running = true;
     console.log(`[poller] Starting — backend: ${BACKEND}`);
     this.register().then(() => this.loop());
+    this.proactiveInterval = setInterval(() => this.pollProactive(), 60000);
   }
 
   stop() {
     this.running = false;
+    if (this.proactiveInterval) {
+      clearInterval(this.proactiveInterval);
+      this.proactiveInterval = null;
+    }
   }
 
   async loop() {
