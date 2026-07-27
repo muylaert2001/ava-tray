@@ -30,7 +30,7 @@ function startVisionProcess() {
     console.warn('ava-vision.py not found at', scriptPath, '- skipping vision process');
     return;
   }
-  const proc = spawn('python', [scriptPath], { detached: false });
+  const proc = spawn('C:\\Python314\\python.exe', [scriptPath], { detached: false });
   visionProc = proc;
 
   proc.stdout?.on('data', (data) => console.log('[vision]', data.toString().trim()));
