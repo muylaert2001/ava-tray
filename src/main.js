@@ -46,7 +46,7 @@ function startVisionProcess() {
       console.log('ava-vision.py exited with code', code);
       if (visionProc === proc) visionProc = null;
     });
-  }, 3000);
+  }, 8000);
 }
 
 function stopVisionProcess() {
