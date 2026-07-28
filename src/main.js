@@ -30,21 +30,23 @@ function startVisionProcess() {
     console.warn('ava-vision.py not found at', scriptPath, '- skipping vision process');
     return;
   }
-  const proc = spawn('C:\\Python314\\python.exe', [scriptPath], { detached: false });
-  visionProc = proc;
+  setTimeout(() => {
+    const proc = spawn('C:\\Python314\\python.exe', [scriptPath], { detached: false });
+    visionProc = proc;
 
-  proc.stdout?.on('data', (data) => console.log('[vision]', data.toString().trim()));
-  proc.stderr?.on('data', (data) => console.error('[vision]', data.toString().trim()));
+    proc.stdout?.on('data', (data) => console.log('[vision]', data.toString().trim()));
+    proc.stderr?.on('data', (data) => console.error('[vision]', data.toString().trim()));
 
-  proc.on('error', (err) => {
-    console.error('Failed to start ava-vision.py (is python installed and on PATH?):', err.message);
-    visionProc = null;
-  });
+    proc.on('error', (err) => {
+      console.error('Failed to start ava-vision.py (is python installed and on PATH?):', err.message);
+      visionProc = null;
+    });
 
-  proc.on('exit', (code) => {
-    console.log('ava-vision.py exited with code', code);
-    if (visionProc === proc) visionProc = null;
-  });
+    proc.on('exit', (code) => {
+      console.log('ava-vision.py exited with code', code);
+      if (visionProc === proc) visionProc = null;
+    });
+  }, 3000);
 }
 
 function stopVisionProcess() {
